@@ -270,7 +270,6 @@ input::placeholder { color:rgba(255,255,255,0.2); }
     </div>
   </div>
 
-  <!-- Data -->
   <div class="card">
     <div class="card-title"><i class="fa-solid fa-user-group" style="color:var(--blush)"></i> Informasi Pasangan</div>
     <div class="persons-grid">
@@ -316,7 +315,6 @@ input::placeholder { color:rgba(255,255,255,0.2); }
     </div>
   </div>
 
-  <!-- Upload -->
   <div class="card">
     <div class="card-title"><i class="fa-solid fa-comment-dots" style="color:#a78bfa"></i> Screenshot Chat <span style="color:var(--rose);font-size:10px;letter-spacing:0;text-transform:none;font-weight:400;margin-left:6px">Opsional tapi disarankan</span></div>
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('chatImg').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
@@ -334,9 +332,16 @@ input::placeholder { color:rgba(255,255,255,0.2); }
     <div style="margin-top:10px" id="aiReadBadge" class="hidden">
       <span class="ai-read-badge"><div class="pulse-dot"></div> AI akan membaca & menganalisis isi chat ini secara mendalam</span>
     </div>
+
+    <div id="chatPositionSelect" class="hidden" style="margin-top:16px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:14px 16px;">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:10px;">Siapa yang posisinya di Kanan (Yang meng-upload)?</label>
+      <select id="rightSideUser" style="width:100%; background:var(--void); border:1px solid rgba(255,255,255,0.1); color:var(--text); padding:10px 14px; border-radius:12px; font-size:13px; outline:none; font-family:'DM Sans',sans-serif;">
+        <option value="1">Pria / Partner 1</option>
+        <option value="2">Wanita / Partner 2</option>
+      </select>
+    </div>
   </div>
 
-  <!-- Options -->
   <div class="card">
     <div class="card-title"><i class="fa-solid fa-sliders" style="color:var(--peach)"></i> Opsi Analisis</div>
     <div style="margin-bottom:16px">
@@ -359,14 +364,12 @@ input::placeholder { color:rgba(255,255,255,0.2); }
     </div>
   </div>
 
-  <!-- Button -->
   <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">
     <div class="btn-shimmer"></div>
     <span id="btnContent"><i class="fa-solid fa-wand-magic-sparkles"></i> Analisis Kecocokan Sekarang</span>
     <div class="loading-dots" id="loadingDots"><span></span><span></span><span></span></div>
   </button>
 
-  <!-- Result -->
   <div class="result-wrapper" id="resultWrapper">
     <div class="score-hero" id="scoreHero">
       <div class="score-names" id="scoreNames">— & —</div>
@@ -408,7 +411,6 @@ input::placeholder { color:rgba(255,255,255,0.2); }
   </div>
 </div>
 
-<!-- Share Modal -->
 <div class="modal-overlay" id="shareModal" onclick="closeModalOutside(event)">
   <div class="modal-box">
     <div class="modal-header">
@@ -548,6 +550,9 @@ function showPreview(file){
     document.getElementById('uploadPrompt').classList.add('hidden');
     document.getElementById('uploadPreview').classList.remove('hidden');
     document.getElementById('aiReadBadge').classList.remove('hidden');
+    // Munculkan opsi pemilih chat
+    document.getElementById('chatPositionSelect').classList.remove('hidden');
+    
     const s=document.getElementById('step2dot');s.classList.add('done');s.innerHTML='<i class="fa-solid fa-check" style="font-size:10px"></i>';
     document.getElementById('line2').classList.add('done');
     document.getElementById('step3dot').classList.add('active');
@@ -560,6 +565,8 @@ window.removeImg=function(e){
   document.getElementById('uploadPrompt').classList.remove('hidden');
   document.getElementById('uploadPreview').classList.add('hidden');
   document.getElementById('aiReadBadge').classList.add('hidden');
+  // Sembunyikan opsi pemilih chat
+  document.getElementById('chatPositionSelect').classList.add('hidden');
 };
 function fileToB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});}
 
@@ -577,6 +584,12 @@ window.runAnalysis=async function(){
         dob2=document.getElementById('dob2').value,
         imageFile=document.getElementById('chatImg').files[0];
   if(!dob1||!dob2){showToast('⚠️ Isi tanggal lahir keduanya dulu!','#f59e0b');return;}
+
+  // Logika baru untuk mengambil posisi chat
+  const rightSideVal = document.getElementById('rightSideUser') ? document.getElementById('rightSideUser').value : "1";
+  const rightName = rightSideVal === "1" ? name1 : name2;
+  const leftName = rightSideVal === "1" ? name2 : name1;
+
   const z1=getZodiac(dob1),z2=getZodiac(dob2),age1=getAge(dob1),age2=getAge(dob2),ageDiff=Math.abs(age1-age2);
   const btn=document.getElementById('analyzeBtn');
   btn.disabled=true;
@@ -584,6 +597,7 @@ window.runAnalysis=async function(){
   document.getElementById('loadingDots').style.display='flex';
   const focusList=[...activeOpts].join(', ');
   const tone=tonePrompts[activeTone]||tonePrompts.gaul;
+  
   const promptText=`Kamu adalah AI Relationship Expert & Astrologer terbaik Indonesia.
 
 Data pasangan:
@@ -591,7 +605,7 @@ Data pasangan:
 - Partner 2 (${name2}): ${age2} tahun, Zodiak ${z2.name} (Elemen: ${z2.element})
 - Selisih umur: ${ageDiff} tahun
 - Fokus analisis: ${focusList}
-${imageFile?'- Screenshot chat dilampirkan: BACA dengan sangat teliti, siapa yang lebih effort, frekuensi balas, emosi, gaya bahasa, siapa yang dominant, tanda-tanda perasaan, dll.':'- Tidak ada screenshot chat.'}
+${imageFile ? `- Screenshot chat dilampirkan. ATURAN BACA GAMBAR: Posisi teks chat di sebelah KANAN (pengirim) adalah milik ${rightName}. Posisi teks chat di sebelah KIRI (penerima) adalah milik ${leftName}. Berdasarkan pembagian posisi kiri-kanan ini, baca dengan sangat teliti siapa yang lebih effort, frekuensi balas, emosi, gaya bahasa, siapa yang dominan, dan tanda-tanda perasaan.` : '- Tidak ada screenshot chat.'}
 
 GAYA BAHASA: ${tone}
 
